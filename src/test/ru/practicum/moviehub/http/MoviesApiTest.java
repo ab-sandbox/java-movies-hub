@@ -216,6 +216,40 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void postMovie_whenYearInvalid_returnsBadRequest() throws Exception {
+        String json = """
+                {
+                  "id": 1,
+                  "title": "Interstellar",
+                  "year": 0
+                }
+                """;
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "POST /movies с некорректным годом должен вернуть 400"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,

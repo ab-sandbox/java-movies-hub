@@ -17,6 +17,8 @@ public class Movie {
     }
 
     public boolean isValid() {
-        return title != null && !title.isBlank();
+        return title != null
+                && !title.isBlank()
+                && year > 0;
     }
 }

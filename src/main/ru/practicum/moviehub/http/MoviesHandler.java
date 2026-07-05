@@ -39,7 +39,7 @@ public class MoviesHandler extends BaseHttpHandler {
                 sendError(
                         ex,
                         400,
-                        "Название фильма не должно быть пустым"
+                        "Некорректные данные фильма"
                 );
                 return;
             }
