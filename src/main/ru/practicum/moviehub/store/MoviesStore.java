@@ -16,4 +16,8 @@ public class MoviesStore {
     public List<Movie> getAll() {
         return List.copyOf(movies);
     }
+
+    public void clear() {
+        movies.clear();
+    }
 }

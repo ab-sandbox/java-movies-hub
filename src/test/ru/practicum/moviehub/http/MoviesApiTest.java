@@ -40,7 +40,7 @@ public class MoviesApiTest {
 
     @BeforeEach
     void beforeEach() {
-
+        store.clear();
     }
 
     @AfterAll
