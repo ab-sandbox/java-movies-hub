@@ -28,6 +28,8 @@ public class MoviesHandler extends BaseHttpHandler {
             handlePost(ex);
         } else if (method.equalsIgnoreCase("DELETE")) {
             handleDelete(ex);
+        } else {
+            sendError(ex, 405, "Метод не поддерживается");
         }
     }
 

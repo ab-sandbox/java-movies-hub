@@ -358,6 +358,28 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void putMovies_whenMethodUnsupported_returnsMethodNotAllowed() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .timeout(Duration.ofSeconds(2))
+                .PUT(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                405,
+                resp.statusCode(),
+                "Неподдерживаемый HTTP-метод должен вернуть 405"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,
