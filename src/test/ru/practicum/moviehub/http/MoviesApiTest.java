@@ -182,6 +182,40 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void postMovie_whenTitleEmpty_returnsBadRequest() throws Exception {
+        String json = """
+                {
+                  "id": 1,
+                  "title": "",
+                  "year": 2014
+                }
+                """;
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "POST /movies с пустым названием должен вернуть 400"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,

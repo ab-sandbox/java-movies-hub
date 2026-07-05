@@ -1,9 +1,7 @@
 package ru.practicum.moviehub.http;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.sun.net.httpserver.HttpExchange;
-import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
@@ -14,11 +12,9 @@ import java.nio.charset.StandardCharsets;
 public class MoviesHandler extends BaseHttpHandler {
 
     private final MoviesStore store;
-    private final Gson gson;
 
     public MoviesHandler(MoviesStore store) {
         this.store = store;
-        this.gson = new Gson();
     }
 
     @Override
@@ -39,11 +35,19 @@ public class MoviesHandler extends BaseHttpHandler {
         )) {
             Movie movie = gson.fromJson(reader, Movie.class);
 
+            if (!movie.isValid()) {
+                sendError(
+                        ex,
+                        400,
+                        "Название фильма не должно быть пустым"
+                );
+                return;
+            }
+
             store.add(movie);
             sendJson(ex, 201, gson.toJson(movie));
         } catch (JsonParseException e) {
-            ErrorResponse error = new ErrorResponse("Некорректный JSON");
-            sendJson(ex, 400, gson.toJson(error));
+            sendError(ex, 400, "Некорректный JSON");
         }
     }
 }
