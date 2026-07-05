@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
 import java.net.URI;
@@ -20,12 +21,16 @@ public class MoviesApiTest {
 
     private static final String BASE = "http://localhost:8080";
 
+    private static MoviesStore store;
+
     private static MoviesServer server;
     private static HttpClient client;
 
     @BeforeAll
     static void beforeAll() {
-        server = new MoviesServer(new MoviesStore(), 8080);
+        store = new MoviesStore();
+
+        server = new MoviesServer(store, 8080);
         server.start();
 
         client = HttpClient.newBuilder()
@@ -76,6 +81,28 @@ public class MoviesApiTest {
         assertTrue(
                 body.startsWith("[") && body.endsWith("]"),
                 "Ожидается JSON-массив"
+        );
+    }
+
+    @Test
+    void getMovies_whenStoreHasMovie_returnsMovie() throws Exception {
+        store.add(new Movie(1, "Interstellar", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = client.send(
+                req,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
+
+        assertEquals(200, resp.statusCode());
+
+        assertTrue(
+                resp.body().contains("Interstellar"),
+                "Ответ должен содержать фильм из хранилища"
         );
     }
 }
