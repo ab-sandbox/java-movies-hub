@@ -55,10 +55,7 @@ public class MoviesApiTest {
                 .GET()
                 .build();
 
-        HttpResponse<String> resp = client.send(
-                req,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = send(req);
 
         assertEquals(
                 200,
@@ -93,16 +90,62 @@ public class MoviesApiTest {
                 .GET()
                 .build();
 
-        HttpResponse<String> resp = client.send(
-                req,
-                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
-        );
+        HttpResponse<String> resp = send(req);
 
         assertEquals(200, resp.statusCode());
 
         assertTrue(
                 resp.body().contains("Interstellar"),
                 "Ответ должен содержать фильм из хранилища"
+        );
+    }
+
+    @Test
+    void postMovie_whenValid_addsMovie() throws Exception {
+        String json = """
+                {
+                  "id": 1,
+                  "title": "Interstellar",
+                  "year": 2014
+                }
+                """;
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                201,
+                resp.statusCode(),
+                "POST /movies должен вернуть 201"
+        );
+
+        HttpRequest getReq = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> getResp = send(getReq);
+
+        assertTrue(
+                getResp.body().contains("Interstellar"),
+                "Добавленный фильм должен возвращаться в GET /movies"
+        );
+    }
+
+    private HttpResponse<String> send(HttpRequest request) throws Exception {
+        return client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
         );
     }
 }
