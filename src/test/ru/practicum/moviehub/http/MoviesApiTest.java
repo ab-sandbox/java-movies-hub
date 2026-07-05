@@ -1,5 +1,6 @@
 package ru.practicum.moviehub.http;
 
+import com.google.gson.Gson;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,6 +28,8 @@ public class MoviesApiTest {
     private static MoviesServer server;
     private static HttpClient client;
 
+    private static Gson gson;
+
     @BeforeAll
     static void beforeAll() {
         store = new MoviesStore();
@@ -36,6 +40,8 @@ public class MoviesApiTest {
         client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(2))
                 .build();
+
+        gson = new Gson();
     }
 
     @BeforeEach
@@ -73,11 +79,14 @@ public class MoviesApiTest {
                 "Content-Type должен содержать формат данных и кодировку"
         );
 
-        String body = resp.body().trim();
+        List<Movie> movies = gson.fromJson(
+                resp.body(),
+                new ListOfMoviesTypeToken().getType()
+        );
 
         assertTrue(
-                body.startsWith("[") && body.endsWith("]"),
-                "Ожидается JSON-массив"
+                movies.isEmpty(),
+                "Ожидается пустой список фильмов"
         );
     }
 
@@ -94,8 +103,20 @@ public class MoviesApiTest {
 
         assertEquals(200, resp.statusCode());
 
-        assertTrue(
-                resp.body().contains("Interstellar"),
+        List<Movie> movies = gson.fromJson(
+                resp.body(),
+                new ListOfMoviesTypeToken().getType()
+        );
+
+        assertEquals(
+                1,
+                movies.size(),
+                "Ответ должен содержать один фильм"
+        );
+
+        assertEquals(
+                "Interstellar",
+                movies.getFirst().getTitle(),
                 "Ответ должен содержать фильм из хранилища"
         );
     }
@@ -136,8 +157,20 @@ public class MoviesApiTest {
 
         HttpResponse<String> getResp = send(getReq);
 
-        assertTrue(
-                getResp.body().contains("Interstellar"),
+        List<Movie> movies = gson.fromJson(
+                getResp.body(),
+                new ListOfMoviesTypeToken().getType()
+        );
+
+        assertEquals(
+                1,
+                movies.size(),
+                "GET /movies должен вернуть добавленный фильм"
+        );
+
+        assertEquals(
+                "Interstellar",
+                movies.getFirst().getTitle(),
                 "Добавленный фильм должен возвращаться в GET /movies"
         );
     }
@@ -268,15 +301,11 @@ public class MoviesApiTest {
                 "GET /movies/{id} должен вернуть 200 для существующего фильма"
         );
 
-        String body = resp.body().trim();
+        Movie movie = gson.fromJson(resp.body(), Movie.class);
 
-        assertTrue(
-                body.startsWith("{") && body.endsWith("}"),
-                "Ожидается JSON-объект фильма"
-        );
-
-        assertTrue(
-                body.contains("Interstellar"),
+        assertEquals(
+                "Interstellar",
+                movie.getTitle(),
                 "Ответ должен содержать найденный фильм"
         );
     }
