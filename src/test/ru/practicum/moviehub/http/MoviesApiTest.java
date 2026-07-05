@@ -250,6 +250,59 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void getMovieById_whenExists_returnsMovie() throws Exception {
+        store.add(new Movie(1, "Interstellar", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/1"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                200,
+                resp.statusCode(),
+                "GET /movies/{id} должен вернуть 200 для существующего фильма"
+        );
+
+        String body = resp.body().trim();
+
+        assertTrue(
+                body.startsWith("{") && body.endsWith("}"),
+                "Ожидается JSON-объект фильма"
+        );
+
+        assertTrue(
+                body.contains("Interstellar"),
+                "Ответ должен содержать найденный фильм"
+        );
+    }
+
+    @Test
+    void getMovieById_whenNotExists_returnsNotFound() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/999"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                404,
+                resp.statusCode(),
+                "GET /movies/{id} должен вернуть 404 для несуществующего фильма"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,

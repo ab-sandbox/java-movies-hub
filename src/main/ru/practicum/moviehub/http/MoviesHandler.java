@@ -8,6 +8,7 @@ import ru.practicum.moviehub.store.MoviesStore;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 public class MoviesHandler extends BaseHttpHandler {
 
@@ -22,10 +23,31 @@ public class MoviesHandler extends BaseHttpHandler {
         String method = ex.getRequestMethod();
 
         if (method.equalsIgnoreCase("GET")) {
-            sendJson(ex, 200, gson.toJson(store.getAll()));
+            handleGet(ex);
         } else if (method.equalsIgnoreCase("POST")) {
             handlePost(ex);
         }
+    }
+
+    private void handleGet(HttpExchange ex) throws IOException {
+        String path = ex.getRequestURI().getPath();
+
+        if (path.equals("/movies")) {
+            sendJson(ex, 200, gson.toJson(store.getAll()));
+            return;
+        }
+
+        String idPart = path.substring("/movies/".length());
+        int id = Integer.parseInt(idPart);
+
+        Optional<Movie> movie = store.findById(id);
+
+        if (movie.isEmpty()) {
+            sendError(ex, 404, "Фильм не найден");
+            return;
+        }
+
+        sendJson(ex, 200, gson.toJson(movie.get()));
     }
 
     private void handlePost(HttpExchange ex) throws IOException {
