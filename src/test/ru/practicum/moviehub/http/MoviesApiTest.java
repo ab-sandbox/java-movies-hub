@@ -123,13 +123,11 @@ public class MoviesApiTest {
 
     @Test
     void postMovie_whenValid_addsMovie() throws Exception {
-        String json = """
-                {
-                  "id": 1,
-                  "title": "Interstellar",
-                  "year": 2014
-                }
-                """;
+        String json = "{\n" +
+                      "  \"id\": 1,\n" +
+                      "  \"title\": \"Interstellar\",\n" +
+                      "  \"year\": 2014\n" +
+                      "}\n";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
@@ -177,13 +175,11 @@ public class MoviesApiTest {
 
     @Test
     void postMovie_whenJsonInvalid_returnsBadRequest() throws Exception {
-        String invalidJson = """
-                {
-                  "id": 1,
-                  "title": "Interstellar",
-                  "year":
-                }
-                """;
+        String invalidJson = "{\n" +
+                             "  \"id\": 1,\n" +
+                             "  \"title\": \"Interstellar\",\n" +
+                             "  \"year\":\n" +
+                             "}\n";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
@@ -217,13 +213,11 @@ public class MoviesApiTest {
 
     @Test
     void postMovie_whenTitleEmpty_returnsBadRequest() throws Exception {
-        String json = """
-                {
-                  "id": 1,
-                  "title": "",
-                  "year": 2014
-                }
-                """;
+        String json = "{\n" +
+                      "  \"id\": 1,\n" +
+                      "  \"title\": \"\",\n" +
+                      "  \"year\": 2014\n" +
+                      "}\n";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
@@ -251,13 +245,11 @@ public class MoviesApiTest {
 
     @Test
     void postMovie_whenYearInvalid_returnsBadRequest() throws Exception {
-        String json = """
-                {
-                  "id": 1,
-                  "title": "Interstellar",
-                  "year": 0
-                }
-                """;
+        String json = "{\n" +
+                      "  \"id\": 1,\n" +
+                      "  \"title\": \"Interstellar\",\n" +
+                      "  \"year\": 0\n" +
+                      "}\n";
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
