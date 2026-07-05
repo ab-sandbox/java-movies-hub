@@ -142,6 +142,46 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void postMovie_whenJsonInvalid_returnsBadRequest() throws Exception {
+        String invalidJson = """
+                {
+                  "id": 1,
+                  "title": "Interstellar",
+                  "year":
+                }
+                """;
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        invalidJson,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "POST /movies с некорректным JSON должен вернуть 400"
+        );
+
+        assertEquals(
+                "application/json; charset=UTF-8",
+                resp.headers().firstValue("Content-Type").orElse(""),
+                "Ошибка должна возвращаться в формате JSON"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,

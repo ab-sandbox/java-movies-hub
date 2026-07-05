@@ -1,7 +1,9 @@
 package ru.practicum.moviehub.http;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.sun.net.httpserver.HttpExchange;
+import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
@@ -26,17 +28,22 @@ public class MoviesHandler extends BaseHttpHandler {
         if (method.equalsIgnoreCase("GET")) {
             sendJson(ex, 200, gson.toJson(store.getAll()));
         } else if (method.equalsIgnoreCase("POST")) {
-            Movie movie;
+            handlePost(ex);
+        }
+    }
 
-            try (InputStreamReader reader = new InputStreamReader(
-                    ex.getRequestBody(),
-                    StandardCharsets.UTF_8
-            )) {
-                movie = gson.fromJson(reader, Movie.class);
-            }
+    private void handlePost(HttpExchange ex) throws IOException {
+        try (InputStreamReader reader = new InputStreamReader(
+                ex.getRequestBody(),
+                StandardCharsets.UTF_8
+        )) {
+            Movie movie = gson.fromJson(reader, Movie.class);
 
             store.add(movie);
             sendJson(ex, 201, gson.toJson(movie));
+        } catch (JsonParseException e) {
+            ErrorResponse error = new ErrorResponse("Некорректный JSON");
+            sendJson(ex, 400, gson.toJson(error));
         }
     }
 }
