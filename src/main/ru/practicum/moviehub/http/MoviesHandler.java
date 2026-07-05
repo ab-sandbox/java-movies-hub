@@ -22,14 +22,18 @@ public class MoviesHandler extends BaseHttpHandler {
     public void handle(HttpExchange ex) throws IOException {
         String method = ex.getRequestMethod();
 
-        if (method.equalsIgnoreCase("GET")) {
-            handleGet(ex);
-        } else if (method.equalsIgnoreCase("POST")) {
-            handlePost(ex);
-        } else if (method.equalsIgnoreCase("DELETE")) {
-            handleDelete(ex);
-        } else {
-            sendError(ex, 405, "Метод не поддерживается");
+        try {
+            if (method.equalsIgnoreCase("GET")) {
+                handleGet(ex);
+            } else if (method.equalsIgnoreCase("POST")) {
+                handlePost(ex);
+            } else if (method.equalsIgnoreCase("DELETE")) {
+                handleDelete(ex);
+            } else {
+                sendError(ex, 405, "Метод не поддерживается");
+            }
+        } catch (NumberFormatException e) {
+            sendError(ex, 400, "Некорректный идентификатор фильма");
         }
     }
 

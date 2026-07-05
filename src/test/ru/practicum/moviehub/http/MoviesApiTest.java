@@ -380,6 +380,50 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void getMovieById_whenIdInvalid_returnsBadRequest() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/abc"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "GET /movies/{id} с некорректным id должен вернуть 400"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
+    @Test
+    void deleteMovie_whenIdInvalid_returnsBadRequest() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/abc"))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "DELETE /movies/{id} с некорректным id должен вернуть 400"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,
