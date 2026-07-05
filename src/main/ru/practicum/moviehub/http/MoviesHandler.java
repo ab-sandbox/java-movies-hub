@@ -26,6 +26,8 @@ public class MoviesHandler extends BaseHttpHandler {
             handleGet(ex);
         } else if (method.equalsIgnoreCase("POST")) {
             handlePost(ex);
+        } else if (method.equalsIgnoreCase("DELETE")) {
+            handleDelete(ex);
         }
     }
 
@@ -37,9 +39,7 @@ public class MoviesHandler extends BaseHttpHandler {
             return;
         }
 
-        String idPart = path.substring("/movies/".length());
-        int id = Integer.parseInt(idPart);
-
+        int id = extractMovieId(ex);
         Optional<Movie> movie = store.findById(id);
 
         if (movie.isEmpty()) {
@@ -71,5 +71,24 @@ public class MoviesHandler extends BaseHttpHandler {
         } catch (JsonParseException e) {
             sendError(ex, 400, "Некорректный JSON");
         }
+    }
+
+    private void handleDelete(HttpExchange ex) throws IOException {
+        int id = extractMovieId(ex);
+        boolean removed = store.removeById(id);
+
+        if (!removed) {
+            sendError(ex, 404, "Фильм не найден");
+            return;
+        }
+
+        sendNoContent(ex);
+    }
+
+    private int extractMovieId(HttpExchange ex) {
+        String path = ex.getRequestURI().getPath();
+        String idPart = path.substring("/movies/".length());
+
+        return Integer.parseInt(idPart);
     }
 }

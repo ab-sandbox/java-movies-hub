@@ -303,6 +303,61 @@ public class MoviesApiTest {
         );
     }
 
+    @Test
+    void deleteMovie_whenExists_removesMovie() throws Exception {
+        store.add(new Movie(1, "Interstellar", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/1"))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                204,
+                resp.statusCode(),
+                "DELETE /movies/{id} должен вернуть 204"
+        );
+
+        HttpRequest getReq = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/1"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> getResp = send(getReq);
+
+        assertEquals(
+                404,
+                getResp.statusCode(),
+                "Удаленный фильм не должен находиться"
+        );
+    }
+
+    @Test
+    void deleteMovie_whenNotExists_returnsNotFound() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/999"))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                404,
+                resp.statusCode(),
+                "DELETE /movies/{id} должен вернуть 404 для несуществующего фильма"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(
                 request,

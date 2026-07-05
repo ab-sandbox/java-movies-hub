@@ -16,6 +16,10 @@ public class MoviesStore {
                 .findFirst();
     }
 
+    public boolean removeById(int id) {
+        return movies.removeIf(movie -> movie.getId() == id);
+    }
+
     public void add(Movie movie) {
         movies.add(movie);
     }
