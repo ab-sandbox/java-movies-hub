@@ -16,12 +16,20 @@ public class Movie {
         this.year = year;
     }
 
+    public Movie(String title, int year) {
+        this(0, title, year);
+    }
+
     public int getId() {
         return id;
     }
 
     public String getTitle() {
         return title;
+    }
+
+    public int getYear() {
+        return year;
     }
 
     public List<String> getValidationErrors() {

@@ -81,8 +81,8 @@ public class MoviesHandler extends BaseHttpHandler {
                 return;
             }
 
-            store.add(movie);
-            sendJson(ex, 201, gson.toJson(movie));
+            Movie savedMovie = store.add(movie);
+            sendJson(ex, 201, gson.toJson(savedMovie));
         } catch (JsonParseException e) {
             sendError(ex, 400, "Некорректный JSON");
         }

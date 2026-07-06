@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public class MoviesStore {
 
+    private int nextId = 1;
     private final List<Movie> movies = new ArrayList<>();
 
     public Optional<Movie> findById(int id) {
@@ -20,8 +21,15 @@ public class MoviesStore {
         return movies.removeIf(movie -> movie.getId() == id);
     }
 
-    public void add(Movie movie) {
-        movies.add(movie);
+    public Movie add(Movie movie) {
+        Movie savedMovie = new Movie(
+                nextId++,
+                movie.getTitle(),
+                movie.getYear()
+        );
+
+        movies.add(savedMovie);
+        return savedMovie;
     }
 
     public List<Movie> getAll() {
@@ -30,5 +38,6 @@ public class MoviesStore {
 
     public void clear() {
         movies.clear();
+        nextId = 1;
     }
 }

@@ -94,7 +94,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovies_whenStoreHasMovie_returnsMovie() throws Exception {
-        store.add(new Movie(1, "Interstellar", 2014));
+        store.add(new Movie("Interstellar", 2014));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
@@ -297,7 +297,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovieById_whenExists_returnsMovie() throws Exception {
-        store.add(new Movie(1, "Interstellar", 2014));
+        store.add(new Movie("Interstellar", 2014));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies/1"))
@@ -346,7 +346,7 @@ public class MoviesApiTest {
 
     @Test
     void deleteMovie_whenExists_removesMovie() throws Exception {
-        store.add(new Movie(1, "Interstellar", 2014));
+        store.add(new Movie("Interstellar", 2014));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies/1"))
@@ -590,6 +590,95 @@ public class MoviesApiTest {
         assertEquals(
                 List.of("Год выпуска не должен быть позже следующего года"),
                 error.getDetails()
+        );
+    }
+
+    @Test
+    void postMovie_whenValid_assignsId() throws Exception {
+        String json = "{\n" +
+                      "  \"title\": \"Interstellar\",\n" +
+                      "  \"year\": 2014\n" +
+                      "}\n";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                201,
+                resp.statusCode(),
+                "POST /movies должен вернуть 201"
+        );
+
+        Movie movie = gson.fromJson(resp.body(), Movie.class);
+
+        assertEquals(
+                1,
+                movie.getId(),
+                "Сервер должен присвоить фильму идентификатор"
+        );
+    }
+
+    @Test
+    void postMovies_whenMultipleMoviesAdded_assignsSequentialIds() throws Exception {
+        String firstJson = "{\n" +
+                           "  \"title\": \"Interstellar\",\n" +
+                           "  \"year\": 2014\n" +
+                           "}\n";
+
+        String secondJson = "{\n" +
+                            "  \"title\": \"Inception\",\n" +
+                            "  \"year\": 2010\n" +
+                            "}\n";
+
+        HttpRequest firstReq = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        firstJson,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpRequest secondReq = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        secondJson,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        Movie firstMovie = gson.fromJson(
+                send(firstReq).body(),
+                Movie.class
+        );
+
+        Movie secondMovie = gson.fromJson(
+                send(secondReq).body(),
+                Movie.class
+        );
+
+        assertEquals(
+                1,
+                firstMovie.getId(),
+                "Первому фильму должен быть присвоен id = 1"
+        );
+
+        assertEquals(
+                2,
+                secondMovie.getId(),
+                "Второму фильму должен быть присвоен id = 2"
         );
     }
 
