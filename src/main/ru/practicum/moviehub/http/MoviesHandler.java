@@ -47,6 +47,10 @@ public class MoviesHandler extends BaseHttpHandler {
             return;
         }
 
+        handleGetMovieById(ex);
+    }
+
+    private void handleGetMovieById(HttpExchange ex) throws IOException {
         int id = extractMovieId(ex);
         Optional<Movie> movie = store.findById(id);
 
@@ -108,16 +112,7 @@ public class MoviesHandler extends BaseHttpHandler {
             List<String> validationErrors = movie.getValidationErrors();
 
             if (!validationErrors.isEmpty()) {
-                sendJson(
-                        ex,
-                        422,
-                        gson.toJson(
-                                new ErrorResponse(
-                                        "Ошибка валидации",
-                                        validationErrors
-                                )
-                        )
-                );
+                sendValidationError(ex, validationErrors);
                 return;
             }
 
@@ -160,5 +155,17 @@ public class MoviesHandler extends BaseHttpHandler {
                 .trim();
 
         return mediaType.equalsIgnoreCase("application/json");
+    }
+
+    private void sendValidationError(
+            HttpExchange ex,
+            List<String> validationErrors
+    ) throws IOException {
+        ErrorResponse error = new ErrorResponse(
+                "Ошибка валидации",
+                validationErrors
+        );
+
+        sendJson(ex, 422, gson.toJson(error));
     }
 }

@@ -58,12 +58,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovies_whenEmpty_returnsEmptyArray() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies");
 
         assertEquals(
                 200,
@@ -71,20 +66,13 @@ public class MoviesApiTest {
                 "GET /movies должен вернуть 200"
         );
 
-        String contentTypeHeaderValue = resp.headers()
-                .firstValue("Content-Type")
-                .orElse("");
-
         assertEquals(
                 "application/json; charset=UTF-8",
-                contentTypeHeaderValue,
+                resp.headers().firstValue("Content-Type").orElse(""),
                 "Content-Type должен содержать формат данных и кодировку"
         );
 
-        List<Movie> movies = gson.fromJson(
-                resp.body(),
-                new ListOfMoviesTypeToken().getType()
-        );
+        List<Movie> movies = parseMovies(resp);
 
         assertTrue(
                 movies.isEmpty(),
@@ -96,19 +84,11 @@ public class MoviesApiTest {
     void getMovies_whenStoreHasMovie_returnsMovie() throws Exception {
         store.add(new Movie("Interstellar", 2014));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies");
 
         assertEquals(200, resp.statusCode());
 
-        List<Movie> movies = gson.fromJson(
-                resp.body(),
-                new ListOfMoviesTypeToken().getType()
-        );
+        List<Movie> movies = parseMovies(resp);
 
         assertEquals(
                 1,
@@ -125,13 +105,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovieById_whenIdInvalid_returnsBadRequest() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/abc"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies/abc");
 
         assertEquals(
                 400,
@@ -139,10 +113,7 @@ public class MoviesApiTest {
                 "GET /movies/{id} с некорректным id должен вернуть 400"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Некорректный идентификатор фильма",
@@ -154,13 +125,7 @@ public class MoviesApiTest {
     void getMovieById_whenExists_returnsMovie() throws Exception {
         store.add(new Movie("Interstellar", 2014));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies/1");
 
         assertEquals(
                 200,
@@ -168,7 +133,7 @@ public class MoviesApiTest {
                 "GET /movies/{id} должен вернуть 200 для существующего фильма"
         );
 
-        Movie movie = gson.fromJson(resp.body(), Movie.class);
+        Movie movie = parseMovie(resp);
 
         assertEquals(
                 1,
@@ -185,13 +150,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovieById_whenNotExists_returnsNotFound() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/999"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies/999");
 
         assertEquals(
                 404,
@@ -199,10 +158,7 @@ public class MoviesApiTest {
                 "GET /movies/{id} должен вернуть 404 для несуществующего фильма"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Фильм не найден",
@@ -216,13 +172,7 @@ public class MoviesApiTest {
         store.add(new Movie("Inception", 2010));
         store.add(new Movie("Whiplash", 2014));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?year=2014"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies?year=2014");
 
         assertEquals(
                 200,
@@ -230,10 +180,7 @@ public class MoviesApiTest {
                 "GET /movies?year=YYYY должен вернуть 200"
         );
 
-        List<Movie> movies = gson.fromJson(
-                resp.body(),
-                new ListOfMoviesTypeToken().getType()
-        );
+        List<Movie> movies = parseMovies(resp);
 
         assertEquals(
                 2,
@@ -251,13 +198,7 @@ public class MoviesApiTest {
     void getMovies_whenYearHasNoMovies_returnsEmptyArray() throws Exception {
         store.add(new Movie("Interstellar", 2014));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?year=2000"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies?year=2000");
 
         assertEquals(
                 200,
@@ -265,10 +206,7 @@ public class MoviesApiTest {
                 "GET /movies?year=YYYY должен вернуть 200"
         );
 
-        List<Movie> movies = gson.fromJson(
-                resp.body(),
-                new ListOfMoviesTypeToken().getType()
-        );
+        List<Movie> movies = parseMovies(resp);
 
         assertTrue(
                 movies.isEmpty(),
@@ -278,13 +216,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovies_whenYearInvalid_returnsBadRequest() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?year=abc"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies?year=abc");
 
         assertEquals(
                 400,
@@ -292,10 +224,7 @@ public class MoviesApiTest {
                 "GET /movies с некорректным параметром year должен вернуть 400"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Некорректный параметр запроса - 'year'",
@@ -305,13 +234,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovies_whenYearParameterMissing_returnsBadRequest() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies?foo=2014"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = get("/movies?foo=2014");
 
         assertEquals(
                 400,
@@ -319,10 +242,7 @@ public class MoviesApiTest {
                 "GET /movies с некорректным параметром должен вернуть 400"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Некорректный параметр запроса - 'year'",
@@ -337,17 +257,7 @@ public class MoviesApiTest {
                       "  \"year\": 2014\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 201,
@@ -355,10 +265,7 @@ public class MoviesApiTest {
                 "POST /movies должен вернуть 201"
         );
 
-        Movie createdMovie = gson.fromJson(
-                resp.body(),
-                Movie.class
-        );
+        Movie createdMovie = parseMovie(resp);
 
         assertEquals(
                 1,
@@ -372,18 +279,9 @@ public class MoviesApiTest {
                 "POST /movies должен вернуть созданный фильм"
         );
 
-        HttpRequest getReq = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
+        HttpResponse<String> getResp = get("/movies");
 
-        HttpResponse<String> getResp = send(getReq);
-
-        List<Movie> movies = gson.fromJson(
-                getResp.body(),
-                new ListOfMoviesTypeToken().getType()
-        );
+        List<Movie> movies = parseMovies(getResp);
 
         assertEquals(
                 1,
@@ -411,17 +309,7 @@ public class MoviesApiTest {
                              "  \"year\":\n" +
                              "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        invalidJson,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(invalidJson, "application/json");
 
         assertEquals(
                 400,
@@ -435,10 +323,7 @@ public class MoviesApiTest {
                 "Ошибка должна возвращаться в формате JSON"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Некорректный JSON",
@@ -453,17 +338,7 @@ public class MoviesApiTest {
                       "  \"year\": 2014\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 422,
@@ -471,10 +346,7 @@ public class MoviesApiTest {
                 "POST /movies с ошибками валидации должен вернуть 422"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Ошибка валидации",
@@ -494,17 +366,7 @@ public class MoviesApiTest {
                       "  \"year\": 1887\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 422,
@@ -512,10 +374,7 @@ public class MoviesApiTest {
                 "POST /movies с ошибками валидации должен вернуть 422"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Ошибка валидации",
@@ -535,17 +394,7 @@ public class MoviesApiTest {
                       "  \"year\": 0\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 422,
@@ -553,10 +402,7 @@ public class MoviesApiTest {
                 "POST /movies с ошибками валидации должен вернуть 422"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Ошибка валидации",
@@ -589,17 +435,7 @@ public class MoviesApiTest {
                       "  \"year\": 2014\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 422,
@@ -607,10 +443,7 @@ public class MoviesApiTest {
                 "Название длиннее 100 символов должно вернуть 422"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 List.of("Название не должно быть длиннее 100 символов"),
@@ -627,17 +460,7 @@ public class MoviesApiTest {
                       "  \"year\": " + invalidYear + "\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 422,
@@ -645,10 +468,7 @@ public class MoviesApiTest {
                 "Слишком поздний год выпуска должен вернуть 422"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 List.of("Год выпуска не должен быть позже следующего года"),
@@ -663,17 +483,7 @@ public class MoviesApiTest {
                       "  \"year\": 2014\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "application/json");
 
         assertEquals(
                 201,
@@ -681,7 +491,7 @@ public class MoviesApiTest {
                 "POST /movies должен вернуть 201"
         );
 
-        Movie movie = gson.fromJson(resp.body(), Movie.class);
+        Movie movie = parseMovie(resp);
 
         assertEquals(
                 1,
@@ -702,35 +512,8 @@ public class MoviesApiTest {
                             "  \"year\": 2010\n" +
                             "}\n";
 
-        HttpRequest firstReq = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        firstJson,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpRequest secondReq = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        secondJson,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        Movie firstMovie = gson.fromJson(
-                send(firstReq).body(),
-                Movie.class
-        );
-
-        Movie secondMovie = gson.fromJson(
-                send(secondReq).body(),
-                Movie.class
-        );
+        Movie firstMovie = parseMovie(post(firstJson, "application/json"));
+        Movie secondMovie = parseMovie(post(secondJson, "application/json"));
 
         assertEquals(
                 1,
@@ -752,17 +535,7 @@ public class MoviesApiTest {
                       "  \"year\": 2014\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "text/plain")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(json, "text/plain");
 
         assertEquals(
                 415,
@@ -770,10 +543,7 @@ public class MoviesApiTest {
                 "POST /movies с неверным Content-Type должен вернуть 415"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Неподдерживаемый тип данных",
@@ -788,17 +558,10 @@ public class MoviesApiTest {
                       "  \"year\": 2014\n" +
                       "}\n";
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .header("Content-Type", "application/json; charset=UTF-8")
-                .timeout(Duration.ofSeconds(2))
-                .POST(HttpRequest.BodyPublishers.ofString(
-                        json,
-                        StandardCharsets.UTF_8
-                ))
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = post(
+                json,
+                "application/json; charset=UTF-8"
+        );
 
         assertEquals(
                 201,
@@ -823,10 +586,7 @@ public class MoviesApiTest {
                 "Неподдерживаемый HTTP-метод должен вернуть 405"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Метод не поддерживается",
@@ -838,13 +598,7 @@ public class MoviesApiTest {
     void deleteMovie_whenExists_removesMovie() throws Exception {
         store.add(new Movie("Interstellar", 2014));
 
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
-                .timeout(Duration.ofSeconds(2))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = delete("/movies/1");
 
         assertEquals(
                 204,
@@ -852,13 +606,7 @@ public class MoviesApiTest {
                 "DELETE /movies/{id} должен вернуть 204"
         );
 
-        HttpRequest getReq = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> getResp = send(getReq);
+        HttpResponse<String> getResp = get("/movies/1");
 
         assertEquals(
                 404,
@@ -869,13 +617,7 @@ public class MoviesApiTest {
 
     @Test
     void deleteMovie_whenNotExists_returnsNotFound() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/999"))
-                .timeout(Duration.ofSeconds(2))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = delete("/movies/999");
 
         assertEquals(
                 404,
@@ -883,10 +625,7 @@ public class MoviesApiTest {
                 "DELETE /movies/{id} должен вернуть 404 для несуществующего фильма"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Фильм не найден",
@@ -896,13 +635,7 @@ public class MoviesApiTest {
 
     @Test
     void deleteMovie_whenIdInvalid_returnsBadRequest() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/abc"))
-                .timeout(Duration.ofSeconds(2))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp = send(req);
+        HttpResponse<String> resp = delete("/movies/abc");
 
         assertEquals(
                 400,
@@ -910,15 +643,61 @@ public class MoviesApiTest {
                 "DELETE /movies/{id} с некорректным id должен вернуть 400"
         );
 
-        ErrorResponse error = gson.fromJson(
-                resp.body(),
-                ErrorResponse.class
-        );
+        ErrorResponse error = parseError(resp);
 
         assertEquals(
                 "Некорректный идентификатор фильма",
                 error.getError()
         );
+    }
+
+    private HttpResponse<String> get(String path) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + path))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        return send(request);
+    }
+
+    private HttpResponse<String> post(String json, String contentType) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", contentType)
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        return send(request);
+    }
+
+    private HttpResponse<String> delete(String path) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + path))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        return send(request);
+    }
+
+    private Movie parseMovie(HttpResponse<String> response) {
+        return gson.fromJson(response.body(), Movie.class);
+    }
+
+    private List<Movie> parseMovies(HttpResponse<String> response) {
+        return gson.fromJson(
+                response.body(),
+                new ListOfMoviesTypeToken().getType()
+        );
+    }
+
+    private ErrorResponse parseError(HttpResponse<String> response) {
+        return gson.fromJson(response.body(), ErrorResponse.class);
     }
 
     private HttpResponse<String> send(HttpRequest request) throws Exception {

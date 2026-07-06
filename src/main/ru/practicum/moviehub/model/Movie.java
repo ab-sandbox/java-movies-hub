@@ -6,6 +6,9 @@ import java.util.List;
 
 public class Movie {
 
+    private static final int MIN_RELEASE_YEAR = 1888;
+    private static final int MAX_TITLE_LENGTH = 100;
+
     private final int id;
     private final String title;
     private final int year;
@@ -37,11 +40,11 @@ public class Movie {
 
         if (title == null || title.isBlank()) {
             errors.add("Название не должно быть пустым");
-        } else if (title.length() > 100) {
+        } else if (title.length() > MAX_TITLE_LENGTH) {
             errors.add("Название не должно быть длиннее 100 символов");
         }
 
-        if (year < 1888) {
+        if (year < MIN_RELEASE_YEAR) {
             errors.add("Год выпуска должен быть не раньше 1888 года");
         } else if (year > Year.now().getValue() + 1) {
             errors.add("Год выпуска не должен быть позже следующего года");
