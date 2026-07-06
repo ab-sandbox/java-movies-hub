@@ -44,7 +44,7 @@ public class MoviesHandler extends BaseHttpHandler {
         String path = ex.getRequestURI().getPath();
 
         if (path.equals("/movies")) {
-            sendJson(ex, 200, gson.toJson(store.getAll()));
+            handleGetMovies(ex);
             return;
         }
 
@@ -57,6 +57,37 @@ public class MoviesHandler extends BaseHttpHandler {
         }
 
         sendJson(ex, 200, gson.toJson(movie.get()));
+    }
+
+    private void handleGetMovies(HttpExchange ex) throws IOException {
+        String query = ex.getRequestURI().getQuery();
+
+        if (query == null) {
+            sendJson(ex, 200, gson.toJson(store.getAll()));
+            return;
+        }
+
+        if (!query.startsWith("year=")) {
+            sendError(
+                    ex,
+                    400,
+                    "Некорректный параметр запроса - 'year'"
+            );
+            return;
+        }
+
+        try {
+            int year = Integer.parseInt(
+                    query.substring("year=".length())
+            );
+            sendJson(ex, 200, gson.toJson(store.findByYear(year)));
+        } catch (NumberFormatException e) {
+            sendError(
+                    ex,
+                    400,
+                    "Некорректный параметр запроса - 'year'"
+            );
+        }
     }
 
     private void handlePost(HttpExchange ex) throws IOException {

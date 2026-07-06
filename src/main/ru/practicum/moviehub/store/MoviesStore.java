@@ -17,6 +17,12 @@ public class MoviesStore {
                 .findFirst();
     }
 
+    public List<Movie> findByYear(int year) {
+        return movies.stream()
+                .filter(movie -> movie.getYear() == year)
+                .toList();
+    }
+
     public boolean removeById(int id) {
         return movies.removeIf(movie -> movie.getId() == id);
     }

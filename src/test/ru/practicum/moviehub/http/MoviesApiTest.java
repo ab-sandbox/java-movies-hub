@@ -139,9 +139,14 @@ public class MoviesApiTest {
                 "GET /movies/{id} с некорректным id должен вернуть 400"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Некорректный идентификатор фильма",
+                error.getError()
         );
     }
 
@@ -166,6 +171,12 @@ public class MoviesApiTest {
         Movie movie = gson.fromJson(resp.body(), Movie.class);
 
         assertEquals(
+                1,
+                movie.getId(),
+                "Ответ должен содержать фильм с запрошенным идентификатором"
+        );
+
+        assertEquals(
                 "Interstellar",
                 movie.getTitle(),
                 "Ответ должен содержать найденный фильм"
@@ -188,9 +199,134 @@ public class MoviesApiTest {
                 "GET /movies/{id} должен вернуть 404 для несуществующего фильма"
         );
 
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Фильм не найден",
+                error.getError()
+        );
+    }
+
+    @Test
+    void getMovies_whenYearSpecified_returnsMoviesFromThatYear() throws Exception {
+        store.add(new Movie("Interstellar", 2014));
+        store.add(new Movie("Inception", 2010));
+        store.add(new Movie("Whiplash", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies?year=2014"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                200,
+                resp.statusCode(),
+                "GET /movies?year=YYYY должен вернуть 200"
+        );
+
+        List<Movie> movies = gson.fromJson(
+                resp.body(),
+                new ListOfMoviesTypeToken().getType()
+        );
+
+        assertEquals(
+                2,
+                movies.size(),
+                "Ответ должен содержать только фильмы указанного года"
+        );
+
         assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+                movies.stream().allMatch(movie -> movie.getYear() == 2014),
+                "Все возвращенные фильмы должны соответствовать указанному году"
+        );
+    }
+
+    @Test
+    void getMovies_whenYearHasNoMovies_returnsEmptyArray() throws Exception {
+        store.add(new Movie("Interstellar", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies?year=2000"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                200,
+                resp.statusCode(),
+                "GET /movies?year=YYYY должен вернуть 200"
+        );
+
+        List<Movie> movies = gson.fromJson(
+                resp.body(),
+                new ListOfMoviesTypeToken().getType()
+        );
+
+        assertTrue(
+                movies.isEmpty(),
+                "Если фильмов указанного года нет, должен вернуться пустой список"
+        );
+    }
+
+    @Test
+    void getMovies_whenYearInvalid_returnsBadRequest() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies?year=abc"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "GET /movies с некорректным параметром year должен вернуть 400"
+        );
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Некорректный параметр запроса - 'year'",
+                error.getError()
+        );
+    }
+
+    @Test
+    void getMovies_whenYearParameterMissing_returnsBadRequest() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies?foo=2014"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "GET /movies с некорректным параметром должен вернуть 400"
+        );
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Некорректный параметр запроса - 'year'",
+                error.getError()
         );
     }
 
@@ -737,9 +873,14 @@ public class MoviesApiTest {
                 "DELETE /movies/{id} должен вернуть 404 для несуществующего фильма"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Фильм не найден",
+                error.getError()
         );
     }
 
@@ -759,9 +900,14 @@ public class MoviesApiTest {
                 "DELETE /movies/{id} с некорректным id должен вернуть 400"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Некорректный идентификатор фильма",
+                error.getError()
         );
     }
 
