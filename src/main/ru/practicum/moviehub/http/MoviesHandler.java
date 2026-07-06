@@ -2,12 +2,14 @@ package ru.practicum.moviehub.http;
 
 import com.google.gson.JsonParseException;
 import com.sun.net.httpserver.HttpExchange;
+import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 public class MoviesHandler extends BaseHttpHandler {
@@ -63,11 +65,18 @@ public class MoviesHandler extends BaseHttpHandler {
         )) {
             Movie movie = gson.fromJson(reader, Movie.class);
 
-            if (!movie.isValid()) {
-                sendError(
+            List<String> validationErrors = movie.getValidationErrors();
+
+            if (!validationErrors.isEmpty()) {
+                sendJson(
                         ex,
-                        400,
-                        "Некорректные данные фильма"
+                        422,
+                        gson.toJson(
+                                new ErrorResponse(
+                                        "Ошибка валидации",
+                                        validationErrors
+                                )
+                        )
                 );
                 return;
             }

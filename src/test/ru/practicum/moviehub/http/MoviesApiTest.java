@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.practicum.moviehub.api.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.store.MoviesStore;
 
@@ -14,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Year;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -212,9 +214,8 @@ public class MoviesApiTest {
     }
 
     @Test
-    void postMovie_whenTitleEmpty_returnsBadRequest() throws Exception {
+    void postMovie_whenTitleEmpty_returnsUnprocessableEntity() throws Exception {
         String json = "{\n" +
-                      "  \"id\": 1,\n" +
                       "  \"title\": \"\",\n" +
                       "  \"year\": 2014\n" +
                       "}\n";
@@ -232,23 +233,32 @@ public class MoviesApiTest {
         HttpResponse<String> resp = send(req);
 
         assertEquals(
-                400,
+                422,
                 resp.statusCode(),
-                "POST /movies с пустым названием должен вернуть 400"
+                "POST /movies с ошибками валидации должен вернуть 422"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Ошибка валидации",
+                error.getError()
+        );
+
+        assertEquals(
+                List.of("Название не должно быть пустым"),
+                error.getDetails()
         );
     }
 
     @Test
-    void postMovie_whenYearInvalid_returnsBadRequest() throws Exception {
+    void postMovie_whenYearTooEarly_returnsUnprocessableEntity() throws Exception {
         String json = "{\n" +
-                      "  \"id\": 1,\n" +
                       "  \"title\": \"Interstellar\",\n" +
-                      "  \"year\": 0\n" +
+                      "  \"year\": 1887\n" +
                       "}\n";
 
         HttpRequest req = HttpRequest.newBuilder()
@@ -264,14 +274,24 @@ public class MoviesApiTest {
         HttpResponse<String> resp = send(req);
 
         assertEquals(
-                400,
+                422,
                 resp.statusCode(),
-                "POST /movies с некорректным годом должен вернуть 400"
+                "POST /movies с ошибками валидации должен вернуть 422"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Ошибка валидации",
+                error.getError()
+        );
+
+        assertEquals(
+                List.of("Год выпуска должен быть не раньше 1888 года"),
+                error.getDetails()
         );
     }
 
@@ -442,6 +462,134 @@ public class MoviesApiTest {
         assertTrue(
                 resp.body().contains("error"),
                 "Ответ должен содержать описание ошибки"
+        );
+    }
+
+    @Test
+    void postMovie_whenMultipleFieldsInvalid_returnsAllValidationErrors() throws Exception {
+        String json = "{\n" +
+                      "  \"title\": \"\",\n" +
+                      "  \"year\": 0\n" +
+                      "}\n";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                422,
+                resp.statusCode(),
+                "POST /movies с ошибками валидации должен вернуть 422"
+        );
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Ошибка валидации",
+                error.getError()
+        );
+
+        assertEquals(
+                2,
+                error.getDetails().size(),
+                "Ответ должен содержать все ошибки валидации"
+        );
+
+        assertTrue(
+                error.getDetails().contains("Название не должно быть пустым"),
+                "Ответ должен содержать ошибку названия"
+        );
+
+        assertTrue(
+                error.getDetails().contains("Год выпуска должен быть не раньше 1888 года"),
+                "Ответ должен содержать ошибку года выпуска"
+        );
+    }
+
+    @Test
+    void postMovie_whenTitleTooLong_returnsUnprocessableEntity() throws Exception {
+        String longTitle = "A".repeat(101);
+
+        String json = "{\n" +
+                      "  \"title\": \"" + longTitle + "\",\n" +
+                      "  \"year\": 2014\n" +
+                      "}\n";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                422,
+                resp.statusCode(),
+                "Название длиннее 100 символов должно вернуть 422"
+        );
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                List.of("Название не должно быть длиннее 100 символов"),
+                error.getDetails()
+        );
+    }
+
+    @Test
+    void postMovie_whenYearTooLate_returnsUnprocessableEntity() throws Exception {
+        int invalidYear = Year.now().getValue() + 2;
+
+        String json = "{\n" +
+                      "  \"title\": \"Interstellar\",\n" +
+                      "  \"year\": " + invalidYear + "\n" +
+                      "}\n";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                422,
+                resp.statusCode(),
+                "Слишком поздний год выпуска должен вернуть 422"
+        );
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                List.of("Год выпуска не должен быть позже следующего года"),
+                error.getDetails()
         );
     }
 
