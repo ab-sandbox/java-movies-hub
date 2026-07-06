@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 public class MoviesHandler extends BaseHttpHandler {
@@ -152,8 +151,14 @@ public class MoviesHandler extends BaseHttpHandler {
         String contentType = ex.getRequestHeaders()
                 .getFirst("Content-Type");
 
-        return contentType != null
-               && contentType.toLowerCase(Locale.ROOT)
-                       .startsWith("application/json");
+        if (contentType == null) {
+            return false;
+        }
+
+        String mediaType = contentType
+                .split(";", 2)[0]
+                .trim();
+
+        return mediaType.equalsIgnoreCase("application/json");
     }
 }

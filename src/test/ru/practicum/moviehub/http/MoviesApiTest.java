@@ -435,9 +435,14 @@ public class MoviesApiTest {
                 "Ошибка должна возвращаться в формате JSON"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Некорректный JSON",
+                error.getError()
         );
     }
 
@@ -818,9 +823,14 @@ public class MoviesApiTest {
                 "Неподдерживаемый HTTP-метод должен вернуть 405"
         );
 
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Метод не поддерживается",
+                error.getError()
         );
     }
 
