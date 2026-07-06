@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 public class MoviesHandler extends BaseHttpHandler {
@@ -59,6 +60,15 @@ public class MoviesHandler extends BaseHttpHandler {
     }
 
     private void handlePost(HttpExchange ex) throws IOException {
+        if (!hasJsonContentType(ex)) {
+            sendError(
+                    ex,
+                    415,
+                    "Неподдерживаемый тип данных"
+            );
+            return;
+        }
+
         try (InputStreamReader reader = new InputStreamReader(
                 ex.getRequestBody(),
                 StandardCharsets.UTF_8
@@ -105,5 +115,14 @@ public class MoviesHandler extends BaseHttpHandler {
         String idPart = path.substring("/movies/".length());
 
         return Integer.parseInt(idPart);
+    }
+
+    private boolean hasJsonContentType(HttpExchange ex) {
+        String contentType = ex.getRequestHeaders()
+                .getFirst("Content-Type");
+
+        return contentType != null
+               && contentType.toLowerCase(Locale.ROOT)
+                       .startsWith("application/json");
     }
 }

@@ -124,9 +124,79 @@ public class MoviesApiTest {
     }
 
     @Test
+    void getMovieById_whenIdInvalid_returnsBadRequest() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/abc"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "GET /movies/{id} с некорректным id должен вернуть 400"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
+    @Test
+    void getMovieById_whenExists_returnsMovie() throws Exception {
+        store.add(new Movie("Interstellar", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/1"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                200,
+                resp.statusCode(),
+                "GET /movies/{id} должен вернуть 200 для существующего фильма"
+        );
+
+        Movie movie = gson.fromJson(resp.body(), Movie.class);
+
+        assertEquals(
+                "Interstellar",
+                movie.getTitle(),
+                "Ответ должен содержать найденный фильм"
+        );
+    }
+
+    @Test
+    void getMovieById_whenNotExists_returnsNotFound() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/999"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                404,
+                resp.statusCode(),
+                "GET /movies/{id} должен вернуть 404 для несуществующего фильма"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
+    @Test
     void postMovie_whenValid_addsMovie() throws Exception {
         String json = "{\n" +
-                      "  \"id\": 1,\n" +
                       "  \"title\": \"Interstellar\",\n" +
                       "  \"year\": 2014\n" +
                       "}\n";
@@ -149,6 +219,23 @@ public class MoviesApiTest {
                 "POST /movies должен вернуть 201"
         );
 
+        Movie createdMovie = gson.fromJson(
+                resp.body(),
+                Movie.class
+        );
+
+        assertEquals(
+                1,
+                createdMovie.getId(),
+                "Созданному фильму должен быть присвоен идентификатор"
+        );
+
+        assertEquals(
+                "Interstellar",
+                createdMovie.getTitle(),
+                "POST /movies должен вернуть созданный фильм"
+        );
+
         HttpRequest getReq = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
                 .timeout(Duration.ofSeconds(2))
@@ -169,6 +256,12 @@ public class MoviesApiTest {
         );
 
         assertEquals(
+                1,
+                movies.getFirst().getId(),
+                "Сохраненный фильм должен иметь присвоенный идентификатор"
+        );
+
+        assertEquals(
                 "Interstellar",
                 movies.getFirst().getTitle(),
                 "Добавленный фильм должен возвращаться в GET /movies"
@@ -178,7 +271,6 @@ public class MoviesApiTest {
     @Test
     void postMovie_whenJsonInvalid_returnsBadRequest() throws Exception {
         String invalidJson = "{\n" +
-                             "  \"id\": 1,\n" +
                              "  \"title\": \"Interstellar\",\n" +
                              "  \"year\":\n" +
                              "}\n";
@@ -292,176 +384,6 @@ public class MoviesApiTest {
         assertEquals(
                 List.of("Год выпуска должен быть не раньше 1888 года"),
                 error.getDetails()
-        );
-    }
-
-    @Test
-    void getMovieById_whenExists_returnsMovie() throws Exception {
-        store.add(new Movie("Interstellar", 2014));
-
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                200,
-                resp.statusCode(),
-                "GET /movies/{id} должен вернуть 200 для существующего фильма"
-        );
-
-        Movie movie = gson.fromJson(resp.body(), Movie.class);
-
-        assertEquals(
-                "Interstellar",
-                movie.getTitle(),
-                "Ответ должен содержать найденный фильм"
-        );
-    }
-
-    @Test
-    void getMovieById_whenNotExists_returnsNotFound() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/999"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                404,
-                resp.statusCode(),
-                "GET /movies/{id} должен вернуть 404 для несуществующего фильма"
-        );
-
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
-        );
-    }
-
-    @Test
-    void deleteMovie_whenExists_removesMovie() throws Exception {
-        store.add(new Movie("Interstellar", 2014));
-
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
-                .timeout(Duration.ofSeconds(2))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                204,
-                resp.statusCode(),
-                "DELETE /movies/{id} должен вернуть 204"
-        );
-
-        HttpRequest getReq = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/1"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> getResp = send(getReq);
-
-        assertEquals(
-                404,
-                getResp.statusCode(),
-                "Удаленный фильм не должен находиться"
-        );
-    }
-
-    @Test
-    void deleteMovie_whenNotExists_returnsNotFound() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/999"))
-                .timeout(Duration.ofSeconds(2))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                404,
-                resp.statusCode(),
-                "DELETE /movies/{id} должен вернуть 404 для несуществующего фильма"
-        );
-
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
-        );
-    }
-
-    @Test
-    void putMovies_whenMethodUnsupported_returnsMethodNotAllowed() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies"))
-                .timeout(Duration.ofSeconds(2))
-                .PUT(HttpRequest.BodyPublishers.noBody())
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                405,
-                resp.statusCode(),
-                "Неподдерживаемый HTTP-метод должен вернуть 405"
-        );
-
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
-        );
-    }
-
-    @Test
-    void getMovieById_whenIdInvalid_returnsBadRequest() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/abc"))
-                .timeout(Duration.ofSeconds(2))
-                .GET()
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                400,
-                resp.statusCode(),
-                "GET /movies/{id} с некорректным id должен вернуть 400"
-        );
-
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
-        );
-    }
-
-    @Test
-    void deleteMovie_whenIdInvalid_returnsBadRequest() throws Exception {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(BASE + "/movies/abc"))
-                .timeout(Duration.ofSeconds(2))
-                .DELETE()
-                .build();
-
-        HttpResponse<String> resp = send(req);
-
-        assertEquals(
-                400,
-                resp.statusCode(),
-                "DELETE /movies/{id} с некорректным id должен вернуть 400"
-        );
-
-        assertTrue(
-                resp.body().contains("error"),
-                "Ответ должен содержать описание ошибки"
         );
     }
 
@@ -679,6 +601,167 @@ public class MoviesApiTest {
                 2,
                 secondMovie.getId(),
                 "Второму фильму должен быть присвоен id = 2"
+        );
+    }
+
+    @Test
+    void postMovie_whenContentTypeInvalid_returnsUnsupportedMediaType() throws Exception {
+        String json = "{\n" +
+                      "  \"title\": \"Interstellar\",\n" +
+                      "  \"year\": 2014\n" +
+                      "}\n";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "text/plain")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                415,
+                resp.statusCode(),
+                "POST /movies с неверным Content-Type должен вернуть 415"
+        );
+
+        ErrorResponse error = gson.fromJson(
+                resp.body(),
+                ErrorResponse.class
+        );
+
+        assertEquals(
+                "Неподдерживаемый тип данных",
+                error.getError()
+        );
+    }
+
+    @Test
+    void postMovie_whenContentTypeContainsCharset_addsMovie() throws Exception {
+        String json = "{\n" +
+                      "  \"title\": \"Interstellar\",\n" +
+                      "  \"year\": 2014\n" +
+                      "}\n";
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .timeout(Duration.ofSeconds(2))
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        json,
+                        StandardCharsets.UTF_8
+                ))
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                201,
+                resp.statusCode(),
+                "POST /movies с JSON и кодировкой UTF-8 должен вернуть 201"
+        );
+    }
+
+    @Test
+    void putMovies_whenMethodUnsupported_returnsMethodNotAllowed() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies"))
+                .timeout(Duration.ofSeconds(2))
+                .PUT(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                405,
+                resp.statusCode(),
+                "Неподдерживаемый HTTP-метод должен вернуть 405"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
+    @Test
+    void deleteMovie_whenExists_removesMovie() throws Exception {
+        store.add(new Movie("Interstellar", 2014));
+
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/1"))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                204,
+                resp.statusCode(),
+                "DELETE /movies/{id} должен вернуть 204"
+        );
+
+        HttpRequest getReq = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/1"))
+                .timeout(Duration.ofSeconds(2))
+                .GET()
+                .build();
+
+        HttpResponse<String> getResp = send(getReq);
+
+        assertEquals(
+                404,
+                getResp.statusCode(),
+                "Удаленный фильм не должен находиться"
+        );
+    }
+
+    @Test
+    void deleteMovie_whenNotExists_returnsNotFound() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/999"))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                404,
+                resp.statusCode(),
+                "DELETE /movies/{id} должен вернуть 404 для несуществующего фильма"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
+        );
+    }
+
+    @Test
+    void deleteMovie_whenIdInvalid_returnsBadRequest() throws Exception {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(BASE + "/movies/abc"))
+                .timeout(Duration.ofSeconds(2))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> resp = send(req);
+
+        assertEquals(
+                400,
+                resp.statusCode(),
+                "DELETE /movies/{id} с некорректным id должен вернуть 400"
+        );
+
+        assertTrue(
+                resp.body().contains("error"),
+                "Ответ должен содержать описание ошибки"
         );
     }
 
